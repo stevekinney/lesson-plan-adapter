@@ -1,0 +1,22 @@
+node_modules
+.svelte-kit
+build
+dist
+.turbo
+.env.local
+.env.*.local
+*.db
+*.db-journal
+.DS_Store
+coverage
+.vercel
+*.swp
+plans
+*-workspace
+
+# Generated skill reference files (produced by generate:references)
+distribution/skill/references/udl-framework.md
+distribution/skill/references/adaptation-quality.md
+
+# Plugin skill mirror (assembled on-demand by the /plugin endpoint)
+distribution/plugin/skills/

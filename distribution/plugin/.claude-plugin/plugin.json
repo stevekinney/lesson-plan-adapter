@@ -1,0 +1,8 @@
+{
+  "name": "lesson-plan-adapter",
+  "description": "Adapts K-12 lesson plans to classroom learning needs using the UDL framework. Connects to a deployed Lesson Plan Adapter MCP server.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Steve Kinney"
+  }
+}

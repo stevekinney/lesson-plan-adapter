@@ -1,0 +1,1 @@
+ALTER TABLE "selected_adaptations" ADD CONSTRAINT "selected_adaptations_user_lesson" UNIQUE("user_id","lesson_title");

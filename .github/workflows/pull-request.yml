@@ -1,0 +1,78 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Typecheck, Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.4'
+
+      - run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun turbo typecheck
+        env:
+          SKIP_ENV_VALIDATION: 'true'
+
+      - name: Lint
+        run: bun turbo lint
+        env:
+          SKIP_ENV_VALIDATION: 'true'
+
+      - name: Test
+        run: bun turbo test
+        env:
+          SKIP_ENV_VALIDATION: 'true'
+
+      - name: Build
+        run: bun turbo build
+        env:
+          DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci'
+          BETTER_AUTH_URL: 'http://localhost:4545'
+          BETTER_AUTH_SECRET: 'ci-placeholder-secret-value-minimum-thirty-two-characters'
+          GOOGLE_CLIENT_ID: 'ci-placeholder'
+          GOOGLE_CLIENT_SECRET: 'ci-placeholder'
+          LOG_LEVEL: 'info'
+
+  validate-database:
+    name: Validate Database
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.4'
+
+      - run: bun install --frozen-lockfile
+
+      - name: Create Neon branch
+        id: neon-branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          branch_name: pr-${{ github.event.pull_request.number }}
+
+      - name: Validate schema
+        run: bun turbo db:validate
+        env:
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_with_pooler }}
+          DATABASE_URL_UNPOOLED: ${{ steps.neon-branch.outputs.db_url }}
+
+      - name: Delete Neon branch
+        if: always() && steps.neon-branch.outcome == 'success'
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          branch: pr-${{ github.event.pull_request.number }}

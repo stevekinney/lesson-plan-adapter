@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lesson-plan-adapter": {
+      "type": "url",
+      "url": "${LESSON_PLAN_ADAPTER_URL}/mcp"
+    }
+  }
+}

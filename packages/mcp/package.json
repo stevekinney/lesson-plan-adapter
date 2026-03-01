@@ -1,0 +1,28 @@
+{
+  "name": "@lesson-adapter/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./logger": "./src/logger.ts",
+    "./env": "./src/env.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "LOG_LEVEL=info NODE_ENV=test DATABASE_URL=postgresql://test:test@localhost/test bun test",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "@t3-oss/env-core": "^0.13.0",
+    "@lesson-adapter/database": "workspace:*",
+    "drizzle-orm": "^0.41.0",
+    "pino": "^9.6.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0",
+    "typescript": "^5.7.3"
+  }
+}

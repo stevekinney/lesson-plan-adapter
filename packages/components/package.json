@@ -1,0 +1,51 @@
+{
+  "name": "@lesson-adapter/components",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./alert": "./src/alert/index.ts",
+    "./avatar": "./src/avatar/index.ts",
+    "./badge": "./src/badge/index.ts",
+    "./button": "./src/button/index.ts",
+    "./card": "./src/card/index.ts",
+    "./checkbox": "./src/checkbox/index.ts",
+    "./dropdown": "./src/dropdown/index.ts",
+    "./empty-state": "./src/empty-state/index.ts",
+    "./input": "./src/input/index.ts",
+    "./label": "./src/label/index.ts",
+    "./modal": "./src/modal/index.ts",
+    "./overlay": "./src/overlay/index.ts",
+    "./page": "./src/page/index.ts",
+    "./select": "./src/select/index.ts",
+    "./skeleton": "./src/skeleton/index.ts",
+    "./spinner": "./src/spinner/index.ts",
+    "./surface": "./src/surface/index.ts",
+    "./textarea": "./src/textarea/index.ts",
+    "./toggle": "./src/toggle/index.ts",
+    "./tooltip": "./src/tooltip/index.ts",
+    "./styles": "./src/styles/index.css",
+    "./styles/tokens": "./src/styles/tokens.css",
+    "./utilities/cn": "./src/utilities/cn.ts",
+    "./utilities/clipboard": "./src/utilities/clipboard.ts",
+    "./utilities/use-clipboard": "./src/utilities/use-clipboard.svelte.ts",
+    "./utilities/truncate": "./src/utilities/truncate.ts",
+    "./utilities/attachments": "./src/utilities/attachments.ts"
+  },
+  "scripts": {
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "bun test",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "svelte": "^5.20.0",
+    "svelte-check": "^4.1.0",
+    "typescript": "^5.7.3"
+  }
+}

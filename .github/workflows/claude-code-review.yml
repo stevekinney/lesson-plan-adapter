@@ -1,0 +1,106 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--model claude-sonnet-4-6'
+          allowed_tools: 'mcp__github__pull_request_review_write,mcp__github__add_comment_to_pending_review,mcp__github__get_pull_request_diff,Bash(gh pr diff:*),Bash(gh pr view:*)'
+          prompt: |
+            You are reviewing PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            ## Instructions
+
+            Perform a thorough, line-by-line code review. You MUST leave inline review
+            comments on specific lines of the diff — do NOT just leave a single summary comment.
+
+            Follow this process exactly:
+            1. Use `mcp__github__get_pull_request_diff` to read the full PR diff.
+            2. Create a pending review with `mcp__github__pull_request_review_write`
+               using method "create". Do NOT include an event field — omitting it creates a pending draft.
+            3. For each issue you find, add an inline comment on the relevant line
+               using `mcp__github__add_comment_to_pending_review`. Only comment on lines
+               that appear in the diff (changed lines); never reference unchanged lines.
+            4. After reviewing all files, submit the review with
+               `mcp__github__pull_request_review_write` using method "submit_pending"
+               and event "COMMENT". If there are no issues, use event "APPROVE" with
+               a brief message instead.
+
+            IMPORTANT: Your text response (outside of tool calls) will be posted by the
+            GitHub Action as a separate regular PR comment. Do NOT write a review summary,
+            conclusion, or any other content in your response text. Output only the single
+            word "Done" when finished. All feedback must go through the tools above.
+
+            ## What to Review
+
+            The project's CLAUDE.md contains the full conventions for this codebase.
+            Enforce those conventions in your review. In addition, pay special attention to:
+
+            ### Code Duplication & Abstractions
+            - Flag duplicated logic across files. Suggest where a shared utility or
+              helper could reduce repetition.
+            - Identify opportunities for better abstractions, but only where the
+              duplication is real (3+ occurrences) — do not over-abstract.
+            - Check for dead code or unused imports that should be removed.
+
+            ### Svelte 5 Idioms
+            This project uses Svelte 5. All components must use modern idioms:
+            - Use `$props()` rune instead of `export let` for component props.
+            - Use `$state()` for reactive state, not top-level `let` declarations.
+            - Use `$derived()` for computed values, not `$:` reactive statements.
+            - Use `$effect()` for side effects, not `$:` reactive blocks.
+            - Use `{@render children()}` instead of `<slot />` for content projection.
+            - Use `snippet` blocks instead of named slots.
+            - Use `onclick={handler}` prop syntax, not `on:click={handler}` directive.
+            - Use `oninput`, `onsubmit`, etc. — not `on:input`, `on:submit`.
+            - Never use `createEventDispatcher` — use callback props instead.
+            - Never use `$$props` or `$$restProps` — destructure from `$props()`.
+            - Prefer `$effect` over `onMount`/`onDestroy` for lifecycle management.
+
+            ### MCP Server Best Practices
+            MCP tools, resources, and prompts live in `packages/mcp/src/`. Review them for:
+            - Input validation: all tool inputs must be validated with Zod schemas.
+            - Tool names must be snake_case (e.g., `get_user_profile`).
+            - File names must be kebab-case (e.g., `get-user-profile.ts`).
+            - Every tool must have a clear, descriptive `description` field.
+            - Error handling: use try/catch, log with a child logger
+              (`logger.child({ tool: 'name', userId })`), and return structured
+              MCP error responses with `isError: true`.
+            - Tools should be focused — one tool per task, not monolithic multi-purpose tools.
+            - Resources should return proper MIME types and structured content.
+            - Prompts should validate their arguments with Zod.
+
+            ### General Quality
+            - Type safety: no `any` types, no type assertions unless justified.
+            - Naming: full words over abbreviations (`configuration` not `config`,
+              `authentication` not `auth`) per project conventions.
+            - No `console.log/error/warn` in server code — use the structured logger.
+            - Environment variables must come from `src/env.ts`, not `process.env`.
+            - Security: watch for injection, XSS, unvalidated inputs at system boundaries.
+
+            ## Tone
+
+            Be constructive and specific. Explain *why* something should change, not
+            just *what* to change. Reference the relevant convention when flagging a
+            violation. Praise good patterns when you see them.

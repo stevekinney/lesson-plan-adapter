@@ -1,0 +1,63 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalEnv": [
+    "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
+    "BETTER_AUTH_URL",
+    "BETTER_AUTH_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "MCP_TOKEN_TTL_SECONDS",
+    "LOG_LEVEL",
+    "NODE_ENV",
+    "SKIP_ENV_VALIDATION"
+  ],
+  "tasks": {
+    "//#generate:references": {
+      "cache": true,
+      "inputs": [
+        "packages/mcp/src/lib/taxonomy.ts",
+        "packages/mcp/src/prompts/references/**",
+        "scripts/generate-skill-references.ts"
+      ],
+      "outputs": [
+        "distribution/skill/references/udl-framework.md",
+        "distribution/skill/references/adaptation-quality.md"
+      ]
+    },
+    "build": {
+      "dependsOn": ["^build", "//#generate:references"],
+      "outputs": [".svelte-kit/**", "build/**"],
+      "cache": true
+    },
+    "dev": {
+      "dependsOn": ["^build", "//#generate:references"],
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    },
+    "format": {
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": true,
+      "outputs": ["coverage/**"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:validate": {
+      "cache": false
+    }
+  }
+}

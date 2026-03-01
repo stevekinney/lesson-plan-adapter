@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772236066269,
+      "tag": "0000_clean_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772322333044,
+      "tag": "0001_nostalgic_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772323840280,
+      "tag": "0002_eminent_sharon_ventura",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772324712058,
+      "tag": "0003_slippery_vampiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772382128303,
+      "tag": "0004_medical_captain_britain",
+      "breakpoints": true
+    }
+  ]
+}

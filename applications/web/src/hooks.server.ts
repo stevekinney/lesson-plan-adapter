@@ -1,0 +1,64 @@
+import type { Handle } from '@sveltejs/kit';
+import { building } from '$app/environment';
+import { database, schema } from '@lesson-adapter/database';
+import { eq, and, isNull, gt } from 'drizzle-orm';
+import { getAuthentication } from '$lib/authentication';
+import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { hashCredential } from '$lib/hash-credential';
+import { getBaseUrl } from '$lib/base-url';
+
+export const handle: Handle = async ({ event, resolve }) => {
+  // MCP routes: authenticate via Bearer token
+  if (event.url.pathname.startsWith('/mcp')) {
+    const baseUrl = getBaseUrl(event);
+    const resourceMetadataUrl = `${baseUrl}/.well-known/oauth-protected-resource/mcp`;
+
+    const authorizationHeader = event.request.headers.get('authorization');
+    if (!authorizationHeader?.startsWith('Bearer ')) {
+      return new Response('Missing or invalid Authorization header', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataUrl}"`,
+        },
+      });
+    }
+
+    const accessToken = authorizationHeader.slice(7);
+    const tokenHash = hashCredential(accessToken);
+
+    const [token] = await database
+      .select()
+      .from(schema.oauthTokens)
+      .where(
+        and(
+          eq(schema.oauthTokens.accessToken, tokenHash),
+          isNull(schema.oauthTokens.revokedAt),
+          gt(schema.oauthTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    if (!token) {
+      return new Response('Invalid or expired token', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': `Bearer error="invalid_token", resource_metadata="${resourceMetadataUrl}"`,
+        },
+      });
+    }
+
+    event.locals.user = { id: token.userId };
+    return resolve(event);
+  }
+
+  // All other routes: populate session and user from Better Auth
+  const session = await getAuthentication().api.getSession({
+    headers: event.request.headers,
+  });
+
+  event.locals.session = session?.session ?? null;
+  event.locals.user = session?.user ?? null;
+
+  // Delegate to Better Auth handler for /api/auth/* routes
+  return svelteKitHandler({ event, resolve, auth: getAuthentication(), building });
+};

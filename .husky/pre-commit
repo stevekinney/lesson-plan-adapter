@@ -1,0 +1,4 @@
+set -e
+
+bun scripts/generate-skill-references.ts
+bunx lint-staged
