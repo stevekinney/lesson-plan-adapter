@@ -1,5 +1,4 @@
-import { describe, it, expect, spyOn } from 'bun:test';
-import fs from 'node:fs/promises';
+import { describe, it, expect } from 'bun:test';
 import { readReference, readAllReferences } from './read-reference';
 
 describe('readReference', () => {
@@ -8,18 +7,16 @@ describe('readReference', () => {
     expect(content).toContain('Universal Design for Learning');
   });
 
-  it('does not read from disk again on subsequent calls (caching)', async () => {
-    const spy = spyOn(fs, 'readFile');
-    await readReference('effort-levels.md');
-    const callsAfterFirst = spy.mock.calls.length;
-    await readReference('effort-levels.md');
-    const callsAfterSecond = spy.mock.calls.length;
-    expect(callsAfterSecond).toBe(callsAfterFirst);
-    spy.mockRestore();
+  it('returns the same content on subsequent calls', async () => {
+    const first = await readReference('effort-levels.md');
+    const second = await readReference('effort-levels.md');
+    expect(first).toBe(second);
   });
 
   it('throws for a nonexistent reference file', async () => {
-    await expect(readReference('nonexistent-file.md')).rejects.toThrow();
+    await expect(readReference('nonexistent-file.md')).rejects.toThrow(
+      'Unknown reference: nonexistent-file.md',
+    );
   });
 });
 

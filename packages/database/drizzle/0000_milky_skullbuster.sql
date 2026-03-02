@@ -1,4 +1,4 @@
-CREATE TABLE "adaptation_reflections" (
+CREATE TABLE IF NOT EXISTS "adaptation_reflections" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"adapted_lesson_id" uuid NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE "adaptation_reflections" (
 	CONSTRAINT "adaptation_reflections_user_id_adapted_lesson_id_unique" UNIQUE("user_id","adapted_lesson_id")
 );
 --> statement-breakpoint
-CREATE TABLE "adapted_lessons" (
+CREATE TABLE IF NOT EXISTS "adapted_lessons" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"lesson_title" text NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "adapted_lessons" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "learning_profiles" (
+CREATE TABLE IF NOT EXISTS "learning_profiles" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"needs" jsonb DEFAULT '[]'::jsonb NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE "learning_profiles" (
 	CONSTRAINT "learning_profiles_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "mcp_sessions" (
+CREATE TABLE IF NOT EXISTS "mcp_sessions" (
 	"session_id" text PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"client_id" text,
@@ -34,7 +34,7 @@ CREATE TABLE "mcp_sessions" (
 	"last_active_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "oauth_clients" (
+CREATE TABLE IF NOT EXISTS "oauth_clients" (
 	"client_id" text PRIMARY KEY NOT NULL,
 	"client_secret" text NOT NULL,
 	"client_name" text NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE "oauth_clients" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "oauth_codes" (
+CREATE TABLE IF NOT EXISTS "oauth_codes" (
 	"code" text PRIMARY KEY NOT NULL,
 	"client_id" text NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE "oauth_codes" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "oauth_tokens" (
+CREATE TABLE IF NOT EXISTS "oauth_tokens" (
 	"access_token" text PRIMARY KEY NOT NULL,
 	"client_id" text NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -68,15 +68,45 @@ CREATE TABLE "oauth_tokens" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "adaptation_reflections" ADD CONSTRAINT "adaptation_reflections_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "adaptation_reflections" ADD CONSTRAINT "adaptation_reflections_adapted_lesson_id_adapted_lessons_id_fk" FOREIGN KEY ("adapted_lesson_id") REFERENCES "public"."adapted_lessons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "adapted_lessons" ADD CONSTRAINT "adapted_lessons_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "learning_profiles" ADD CONSTRAINT "learning_profiles_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "mcp_sessions" ADD CONSTRAINT "mcp_sessions_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "mcp_sessions" ADD CONSTRAINT "mcp_sessions_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "oauth_codes" ADD CONSTRAINT "oauth_codes_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "oauth_codes" ADD CONSTRAINT "oauth_codes_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "oauth_tokens" ADD CONSTRAINT "oauth_tokens_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "oauth_tokens" ADD CONSTRAINT "oauth_tokens_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_adaptation_reflections_adapted_lesson" ON "adaptation_reflections" USING btree ("adapted_lesson_id");--> statement-breakpoint
-CREATE INDEX "idx_adapted_lessons_user_created" ON "adapted_lessons" USING btree ("user_id","created_at");
+DO $$ BEGIN
+ALTER TABLE "adaptation_reflections" ADD CONSTRAINT "adaptation_reflections_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "adaptation_reflections" ADD CONSTRAINT "adaptation_reflections_adapted_lesson_id_adapted_lessons_id_fk" FOREIGN KEY ("adapted_lesson_id") REFERENCES "public"."adapted_lessons"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "adapted_lessons" ADD CONSTRAINT "adapted_lessons_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "learning_profiles" ADD CONSTRAINT "learning_profiles_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "mcp_sessions" ADD CONSTRAINT "mcp_sessions_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "mcp_sessions" ADD CONSTRAINT "mcp_sessions_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "oauth_codes" ADD CONSTRAINT "oauth_codes_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "oauth_codes" ADD CONSTRAINT "oauth_codes_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "oauth_tokens" ADD CONSTRAINT "oauth_tokens_client_id_oauth_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."oauth_clients"("client_id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "oauth_tokens" ADD CONSTRAINT "oauth_tokens_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_adaptation_reflections_adapted_lesson" ON "adaptation_reflections" USING btree ("adapted_lesson_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_adapted_lessons_user_created" ON "adapted_lessons" USING btree ("user_id","created_at");

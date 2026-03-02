@@ -22,17 +22,27 @@
         "scripts/generate-skill-references.ts"
       ],
       "outputs": [
-        "distribution/skill/references/udl-framework.md",
-        "distribution/skill/references/adaptation-quality.md"
+        "distribution/plugin/skills/lesson-plan-adapter/references/udl-framework.md",
+        "distribution/plugin/skills/lesson-plan-adapter/references/adaptation-quality.md"
       ]
     },
+    "//#build:archives": {
+      "dependsOn": ["//#generate:references"],
+      "cache": true,
+      "inputs": [
+        "distribution/plugin/**",
+        "scripts/build-distribution-archives.ts",
+        "scripts/create-zip-archive.ts"
+      ],
+      "outputs": ["applications/web/static/plugin.zip", "applications/web/static/skill.zip"]
+    },
     "build": {
-      "dependsOn": ["^build", "//#generate:references"],
+      "dependsOn": ["^build", "//#generate:references", "//#build:archives"],
       "outputs": [".svelte-kit/**", "build/**"],
       "cache": true
     },
     "dev": {
-      "dependsOn": ["^build", "//#generate:references"],
+      "dependsOn": ["^build", "//#generate:references", "//#build:archives"],
       "cache": false,
       "persistent": true
     },

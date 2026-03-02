@@ -1,0 +1,13 @@
+{
+  "name": "lesson-plan-adapter",
+  "owner": {
+    "name": "Steve Kinney"
+  },
+  "plugins": [
+    {
+      "name": "lesson-plan-adapter",
+      "source": "./distribution/plugin",
+      "description": "Adapts K-12 lesson plans to classroom learning needs using the UDL framework"
+    }
+  ]
+}

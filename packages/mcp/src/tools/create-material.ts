@@ -1,9 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { logger } from '../logger.js';
 import { generateNeedsSummary } from '../lib/taxonomy.js';
 import { renderTeachingContext } from '../prompts/lib/render-teaching-context.js';
+import { readReference } from '../prompts/lib/read-reference.js';
 
 const materialTypeToHeading: Record<string, string> = {
   'word-bank': 'Word Bank',
@@ -16,23 +15,11 @@ const materialTypeToHeading: Record<string, string> = {
   checklist: 'Checklist',
 };
 
-let cachedSpecificationsContent: Promise<string> | null = null;
-
-function getSpecificationsContent(): Promise<string> {
-  if (!cachedSpecificationsContent) {
-    const specPath = fileURLToPath(
-      import.meta.resolve('../prompts/references/material-specifications.md'),
-    );
-    cachedSpecificationsContent = readFile(specPath, 'utf-8');
-  }
-  return cachedSpecificationsContent;
-}
-
 async function readMaterialSpecification(materialType: string): Promise<string> {
   const heading = materialTypeToHeading[materialType];
   if (!heading) return '';
 
-  const content = await getSpecificationsContent();
+  const content = await readReference('material-specifications.md');
   const pattern = new RegExp(`## ${heading}\\n([\\s\\S]*?)(?=\\n## |$)`);
   const match = content.match(pattern);
   return match ? match[1].trim() : '';

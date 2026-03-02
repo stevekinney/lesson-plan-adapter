@@ -13,16 +13,25 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 ENV SKIP_ENV_VALIDATION=true
+ENV NODE_ENV=production
 RUN bun turbo build --filter=@lesson-adapter/web
+
+RUN node --experimental-strip-types scripts/merge-production-dependencies.ts /production
+
+FROM node:22-slim AS dependencies
+
+WORKDIR /app
+
+COPY --from=builder /production/package.json ./
+RUN npm install --omit=dev
 
 FROM node:22-slim AS runner
 
 WORKDIR /app
 
 COPY --from=builder /app/applications/web/build ./build
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=builder /app/applications/web/package.json ./
-COPY --from=builder /app/distribution ./distribution
 
 ENV NODE_ENV=production
 ENV PORT=3000

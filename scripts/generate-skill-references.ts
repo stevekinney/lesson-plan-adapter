@@ -14,7 +14,7 @@ import { TAXONOMY } from '../packages/mcp/src/lib/taxonomy.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const REFERENCES_SOURCE = resolve(ROOT, 'packages/mcp/src/prompts/references');
-const SKILL_DIRECTORY = resolve(ROOT, 'distribution/skill');
+const SKILL_DIRECTORY = resolve(ROOT, 'distribution/plugin/skills/lesson-plan-adapter');
 const REFERENCES_DIRECTORY = resolve(SKILL_DIRECTORY, 'references');
 
 function ensureDirectory(directory: string): void {

@@ -15,8 +15,9 @@ plans
 *-workspace
 
 # Generated skill reference files (produced by generate:references)
-distribution/skill/references/udl-framework.md
-distribution/skill/references/adaptation-quality.md
+distribution/plugin/skills/lesson-plan-adapter/references/udl-framework.md
+distribution/plugin/skills/lesson-plan-adapter/references/adaptation-quality.md
 
-# Plugin skill mirror (assembled on-demand by the /plugin endpoint)
-distribution/plugin/skills/
+# Generated ZIP archives (produced by build:archives)
+applications/web/static/plugin.zip
+applications/web/static/skill.zip

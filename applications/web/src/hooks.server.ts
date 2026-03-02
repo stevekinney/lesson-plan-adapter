@@ -6,10 +6,16 @@ import { getAuthentication } from '$lib/authentication';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { hashCredential } from '$lib/hash-credential';
 import { getBaseUrl } from '$lib/base-url';
+import { corsHeaders } from '$lib/cors';
 
 export const handle: Handle = async ({ event, resolve }) => {
   // MCP routes: authenticate via Bearer token
   if (event.url.pathname.startsWith('/mcp')) {
+    // CORS preflight — must respond before auth check
+    if (event.request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     const baseUrl = getBaseUrl(event);
     const resourceMetadataUrl = `${baseUrl}/.well-known/oauth-protected-resource/mcp`;
 
@@ -19,6 +25,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         status: 401,
         headers: {
           'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataUrl}"`,
+          ...corsHeaders,
         },
       });
     }
@@ -43,12 +50,20 @@ export const handle: Handle = async ({ event, resolve }) => {
         status: 401,
         headers: {
           'WWW-Authenticate': `Bearer error="invalid_token", resource_metadata="${resourceMetadataUrl}"`,
+          ...corsHeaders,
         },
       });
     }
 
     event.locals.user = { id: token.userId };
-    return resolve(event);
+    const response = await resolve(event);
+
+    // Add CORS headers to all authenticated MCP responses
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   }
 
   // All other routes: populate session and user from Better Auth

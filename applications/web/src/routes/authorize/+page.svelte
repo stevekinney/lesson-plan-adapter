@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { Button } from '@lesson-adapter/components/button';
-  import { Alert } from '@lesson-adapter/components/alert';
-  import { Card } from '@lesson-adapter/components/card';
   import { Badge } from '@lesson-adapter/components/badge';
 
   let { data } = $props();
@@ -10,114 +8,226 @@
 </script>
 
 <svelte:head>
-  <title>{form?.approved ? 'Connected' : 'Authorize Application'}</title>
+  <title>Authorize — Lesson Plan Adapter</title>
 </svelte:head>
 
-<main class="page-container">
-  {#if form?.approved}
-    <Card>
-      <div class="content">
-        <Alert variant="success" title="Connected!">
-          <div class="alert-body">
-            {#if form.hasProfile}
-              <p>
-                You're all set. Open a new conversation in Claude and paste a lesson plan to get
-                adaptation suggestions.
-              </p>
-              <p>
-                To update your classroom profile, just ask Claude:
-                <strong>"Help me update my classroom profile."</strong>
-              </p>
-            {:else}
-              <p>
-                To get started, open a new conversation in Claude and say:
-                <strong>"Help me set up my classroom profile."</strong> It takes about two minutes.
-              </p>
-            {/if}
-          </div>
-        </Alert>
-
-        <p class="close-note">You can close this tab.</p>
+<main class="authorize-page">
+  {#if form?.message}
+    <div class="authorize-card">
+      <div class="error-icon" aria-hidden="true">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line
+            x1="9"
+            y1="9"
+            x2="15"
+            y2="15"
+          ></line></svg
+        >
       </div>
-    </Card>
-
-    <!-- Hidden iframe completes the OAuth redirect_uri callback so the MCP client
-         receives the authorization code without navigating the user's browser tab. -->
-    <iframe src={form.callbackUrl} title="OAuth callback" hidden></iframe>
+      <div class="error-header">
+        <h1 class="error-title">Authorization Failed</h1>
+        <p class="error-description">{form.message}</p>
+      </div>
+    </div>
   {:else if data.error}
-    <Card>
-      <Alert variant="danger" title="Authorization Error" description={data.error} />
-    </Card>
-  {:else}
-    <Card>
-      <div class="content">
-        <h1 class="title">Authorize {data.clientName}</h1>
-        <p class="text-muted">
-          <strong>{data.clientName}</strong> wants to access your account as
-          <strong>{data.user?.email || data.user?.name || 'Unknown'}</strong>.
-        </p>
-
-        {#if data.scope}
-          <p class="text-muted">Requested scopes: <Badge label={data.scope} size="sm" /></p>
-        {/if}
-
-        <div class="actions">
-          <form method="POST" action="?/approve">
-            <input type="hidden" name="client_id" value={data.clientId} />
-            <input type="hidden" name="redirect_uri" value={data.redirectUri} />
-            <input type="hidden" name="code_challenge" value={data.codeChallenge} />
-            <input type="hidden" name="code_challenge_method" value={data.codeChallengeMethod} />
-            <input type="hidden" name="state" value={data.state || ''} />
-            <input type="hidden" name="scope" value={data.scope} />
-            <Button type="submit" variant="primary" label="Approve" />
-          </form>
-
-          <form method="POST" action="?/deny">
-            <input type="hidden" name="client_id" value={data.clientId} />
-            <input type="hidden" name="redirect_uri" value={data.redirectUri} />
-            <input type="hidden" name="state" value={data.state || ''} />
-            <Button type="submit" variant="secondary" label="Deny" />
-          </form>
-        </div>
+    <div class="authorize-card">
+      <div class="error-icon" aria-hidden="true">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line
+            x1="9"
+            y1="9"
+            x2="15"
+            y2="15"
+          ></line></svg
+        >
       </div>
-    </Card>
+      <div class="error-header">
+        <h1 class="error-title">Authorization Error</h1>
+        <p class="error-description">{data.error}</p>
+      </div>
+    </div>
+  {:else}
+    <div class="authorize-card">
+      <div class="authorize-header">
+        <h1 class="authorize-title">Lesson Plan Adapter</h1>
+        <p class="authorize-subtitle">wants to connect to your account</p>
+      </div>
+
+      <div class="authorize-details">
+        <div class="detail-row">
+          <span class="detail-label">Account</span>
+          <span class="detail-value">{data.user?.email || data.user?.name || 'Unknown'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Requested by</span>
+          <span class="detail-value">{data.clientName}</span>
+        </div>
+        {#if data.scope}
+          <div class="detail-row">
+            <span class="detail-label">Scope</span>
+            <Badge label={data.scope} size="sm" />
+          </div>
+        {/if}
+      </div>
+
+      <p class="authorize-note">
+        This allows the adapter to access your classroom profile when you use it in Claude.
+      </p>
+
+      <div class="authorize-actions">
+        <form method="POST" action="?/approve" class="action-form">
+          <input type="hidden" name="client_id" value={data.clientId} />
+          <input type="hidden" name="redirect_uri" value={data.redirectUri} />
+          <input type="hidden" name="code_challenge" value={data.codeChallenge} />
+          <input type="hidden" name="code_challenge_method" value={data.codeChallengeMethod} />
+          <input type="hidden" name="state" value={data.state || ''} />
+          <input type="hidden" name="scope" value={data.scope} />
+          <Button type="submit" variant="primary" size="md" fullWidth label="Allow Access" />
+        </form>
+
+        <form method="POST" action="?/deny" class="action-form">
+          <input type="hidden" name="client_id" value={data.clientId} />
+          <input type="hidden" name="redirect_uri" value={data.redirectUri} />
+          <input type="hidden" name="state" value={data.state || ''} />
+          <Button type="submit" variant="ghost" size="md" fullWidth label="Deny" />
+        </form>
+      </div>
+    </div>
   {/if}
 </main>
 
 <style>
-  .page-container {
-    max-width: 480px;
-    margin: var(--space-8) auto;
-    padding: var(--space-4);
+  .authorize-page {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
   }
 
-  .content {
+  .authorize-card {
+    width: 100%;
+    max-width: 24rem;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-8) var(--space-6);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-muted);
+    box-shadow: var(--shadow-sm);
   }
 
-  .title {
-    font-size: var(--text-xl);
+  /* Authorize state */
+
+  .authorize-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .authorize-title {
+    font-size: var(--text-lg);
     font-weight: var(--font-semibold);
     color: var(--text);
   }
 
-  .actions {
-    display: flex;
-    gap: var(--space-3);
-    margin-top: var(--space-2);
+  .authorize-subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
   }
 
-  .alert-body {
+  .authorize-details {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--surface-inset);
+    border-radius: var(--radius-md);
+    width: 100%;
   }
 
-  .close-note {
+  .detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-0-5);
+  }
+
+  .detail-label {
     font-size: var(--text-xs);
-    color: var(--text-disabled);
-    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  .detail-value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text);
+  }
+
+  .authorize-note {
+    font-size: var(--text-xs);
+    color: var(--text-subtle);
+    text-align: center;
+    line-height: var(--leading-relaxed);
+  }
+
+  .authorize-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .action-form {
+    display: contents;
+  }
+
+  /* Error state */
+
+  .error-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-full);
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .error-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .error-title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--text);
+  }
+
+  .error-description {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
   }
 </style>

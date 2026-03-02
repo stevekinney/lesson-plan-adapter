@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { isValidRedirectUri } from '$lib/validate-redirect-uri';
 import { hashCredential } from '$lib/hash-credential';
 import { environment } from '../../env';
+import { logger } from '@lesson-adapter/mcp/logger';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   if (!locals.user) {
@@ -92,7 +93,8 @@ async function validateRedirectUri(clientId: string, redirectUri: string): Promi
 export const actions: Actions = {
   approve: async ({ request, locals }) => {
     if (!locals.user) {
-      return fail(401, { message: 'Not authenticated' });
+      logger.warn('OAuth approve: user session missing during form submission');
+      return fail(401, { message: 'Your session has expired. Please reload and try again.' });
     }
 
     const formData = await request.formData();
@@ -104,12 +106,17 @@ export const actions: Actions = {
     const scope = getFormString(formData, 'scope') || '';
 
     if (!clientId || !redirectUri || !codeChallenge) {
+      logger.warn(
+        { clientId, redirectUri: !!redirectUri, codeChallenge: !!codeChallenge },
+        'OAuth approve: missing required fields',
+      );
       return fail(400, { message: 'Missing required fields' });
     }
 
     // Re-validate redirect_uri against registered client (prevents open redirect)
     const validRedirect = await validateRedirectUri(clientId, redirectUri);
     if (!validRedirect) {
+      logger.warn({ clientId, redirectUri }, 'OAuth approve: redirect URI validation failed');
       return fail(400, { message: 'Invalid redirect URI for this client' });
     }
 
@@ -134,15 +141,7 @@ export const actions: Actions = {
       redirectUrl.searchParams.set('state', state);
     }
 
-    const [profile] = await database
-      .select()
-      .from(schema.learningProfiles)
-      .where(eq(schema.learningProfiles.userId, locals.user.id))
-      .limit(1);
-
-    const hasProfile = Boolean(profile && profile.needs.length > 0);
-
-    return { approved: true, callbackUrl: redirectUrl.toString(), hasProfile };
+    redirect(302, redirectUrl.toString());
   },
 
   deny: async ({ request, locals }) => {

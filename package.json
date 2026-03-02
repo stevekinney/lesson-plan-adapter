@@ -17,6 +17,7 @@
     "db:migrate": "turbo db:migrate",
     "db:validate": "turbo db:validate",
     "generate:references": "bun scripts/generate-skill-references.ts",
+    "build:archives": "bun scripts/build-distribution-archives.ts",
     "prepare": "husky"
   },
   "devDependencies": {
