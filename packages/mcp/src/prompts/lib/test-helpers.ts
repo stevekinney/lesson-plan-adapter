@@ -45,6 +45,12 @@ function createMockQueryChain() {
         onConflictDoUpdate: () => Promise.resolve(),
       }),
     }),
+    update: () => ({
+      set: () => ({
+        where: () => Promise.resolve(),
+        then: (resolve: (value: unknown) => void) => Promise.resolve().then(resolve),
+      }),
+    }),
   };
 }
 

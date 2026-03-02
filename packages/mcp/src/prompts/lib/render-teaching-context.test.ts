@@ -69,4 +69,52 @@ describe('renderTeachingContext', () => {
     });
     expect(result).toContain('ELA, Math, and Science');
   });
+
+  it('renders teaching priorities', () => {
+    const result = renderTeachingContext({
+      teachingPriorities: 'student independence and equity',
+    });
+    expect(result).toContain('Teaching priorities: student independence and equity.');
+  });
+
+  it('renders known constraints', () => {
+    const result = renderTeachingContext({
+      knownConstraints: 'no para support, 30+ students',
+    });
+    expect(result).toContain('Known constraints: no para support, 30+ students.');
+  });
+
+  it('renders teaching priorities only without default message', () => {
+    const result = renderTeachingContext({
+      teachingPriorities: 'building confidence',
+    });
+    expect(result).not.toContain('No additional teaching context has been provided.');
+  });
+
+  it('renders known constraints only without default message', () => {
+    const result = renderTeachingContext({
+      knownConstraints: 'shared classroom',
+    });
+    expect(result).not.toContain('No additional teaching context has been provided.');
+  });
+
+  it('renders full context including teaching priorities and known constraints', () => {
+    const result = renderTeachingContext({
+      gradeRange: '6-8',
+      subjectAreas: ['ELA'],
+      typicalBlockMinutes: 45,
+      studentsHaveDevices: true,
+      state: 'TX',
+      additionalContext: 'Co-teach with SPED teacher.',
+      teachingPriorities: 'student independence',
+      knownConstraints: 'no aide available',
+    });
+    expect(result).toContain('6-8');
+    expect(result).toContain('ELA');
+    expect(result).toContain('45-minute blocks');
+    expect(result).toContain('Students have devices available.');
+    expect(result).toContain('Co-teach with SPED teacher.');
+    expect(result).toContain('Teaching priorities: student independence.');
+    expect(result).toContain('Known constraints: no aide available.');
+  });
 });

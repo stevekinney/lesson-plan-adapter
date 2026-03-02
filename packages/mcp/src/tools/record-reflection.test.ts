@@ -74,4 +74,113 @@ describe('recordReflectionTool.handler', () => {
     expect(parsed.success).toBe(true);
     expect(parsed.message).toContain('Reflection saved');
   });
+
+  it('accepts needs_addressed and needs_not_addressed fields', async () => {
+    setQueryResult(0, [{ id: 'adaptation-1' }]);
+
+    const result = await recordReflectionTool.handler(
+      {
+        adapted_lesson_id: 'adaptation-1',
+        what_worked: ['Visual supports helped'],
+        what_did_not_work: [],
+        overall_rating: 'somewhat-helpful' as const,
+        needs_addressed: ['visual-supports', 'text-read-aloud'],
+        needs_not_addressed: ['extended-time'],
+      },
+      { userId: 'test-user' },
+    );
+
+    expect(result.isError).toBeUndefined();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.success).toBe(true);
+  });
+
+  it('accepts rejected_suggestions field', async () => {
+    setQueryResult(0, [{ id: 'adaptation-1' }]);
+
+    const result = await recordReflectionTool.handler(
+      {
+        adapted_lesson_id: 'adaptation-1',
+        what_worked: ['Sentence starters worked'],
+        what_did_not_work: [],
+        overall_rating: 'very-helpful' as const,
+        rejected_suggestions: [
+          {
+            suggestion: 'Add station rotation',
+            reason: 'Not enough space in my classroom',
+          },
+          {
+            suggestion: 'Use audio recording for assessment',
+            reason: 'Students do not have devices',
+          },
+        ],
+      },
+      { userId: 'test-user' },
+    );
+
+    expect(result.isError).toBeUndefined();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe('recordReflectionTool.inputSchema', () => {
+  it('validates needs_addressed as an array of strings', () => {
+    const schema = recordReflectionTool.inputSchema;
+    const result = schema.safeParse({
+      adapted_lesson_id: '00000000-0000-0000-0000-000000000000',
+      what_worked: ['test'],
+      what_did_not_work: [],
+      overall_rating: 'very-helpful',
+      needs_addressed: ['visual-supports'],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('validates needs_not_addressed as an array of strings', () => {
+    const schema = recordReflectionTool.inputSchema;
+    const result = schema.safeParse({
+      adapted_lesson_id: '00000000-0000-0000-0000-000000000000',
+      what_worked: ['test'],
+      what_did_not_work: [],
+      overall_rating: 'very-helpful',
+      needs_not_addressed: ['extended-time'],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('validates rejected_suggestions as array of objects with suggestion and reason', () => {
+    const schema = recordReflectionTool.inputSchema;
+    const result = schema.safeParse({
+      adapted_lesson_id: '00000000-0000-0000-0000-000000000000',
+      what_worked: ['test'],
+      what_did_not_work: [],
+      overall_rating: 'very-helpful',
+      rejected_suggestions: [{ suggestion: 'Use tablets', reason: 'No devices' }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects rejected_suggestions with missing reason field', () => {
+    const schema = recordReflectionTool.inputSchema;
+    const result = schema.safeParse({
+      adapted_lesson_id: '00000000-0000-0000-0000-000000000000',
+      what_worked: ['test'],
+      what_did_not_work: [],
+      overall_rating: 'very-helpful',
+      rejected_suggestions: [{ suggestion: 'Use tablets' }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('allows all new fields to be omitted', () => {
+    const schema = recordReflectionTool.inputSchema;
+    const result = schema.safeParse({
+      adapted_lesson_id: '00000000-0000-0000-0000-000000000000',
+      what_worked: ['test'],
+      what_did_not_work: [],
+      overall_rating: 'somewhat-helpful',
+    });
+    expect(result.success).toBe(true);
+  });
 });
