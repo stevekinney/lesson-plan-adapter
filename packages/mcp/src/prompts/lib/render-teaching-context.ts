@@ -58,6 +58,14 @@ export function renderTeachingContext(context: TeachingContext): string {
     sentence += (sentence ? ' ' : '') + context.additionalContext;
   }
 
+  if (context.teachingPriorities) {
+    sentence += (sentence ? ' ' : '') + `Teaching priorities: ${context.teachingPriorities}.`;
+  }
+
+  if (context.knownConstraints) {
+    sentence += (sentence ? ' ' : '') + `Known constraints: ${context.knownConstraints}.`;
+  }
+
   if (!sentence) {
     return 'No additional teaching context has been provided.';
   }

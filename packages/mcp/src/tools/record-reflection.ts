@@ -27,6 +27,25 @@ export const recordReflectionTool = {
     overall_rating: z
       .enum(['very-helpful', 'somewhat-helpful', 'not-helpful'])
       .describe('Overall rating of how helpful the adaptation suggestions were.'),
+    needs_addressed: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Which learning needs from the teacher profile were effectively addressed by the adaptations.',
+      ),
+    needs_not_addressed: z
+      .array(z.string())
+      .optional()
+      .describe('Which targeted learning needs were NOT effectively addressed by the adaptations.'),
+    rejected_suggestions: z
+      .array(
+        z.object({
+          suggestion: z.string().describe('The suggestion that was rejected.'),
+          reason: z.string().describe('Why the teacher rejected this suggestion.'),
+        }),
+      )
+      .optional()
+      .describe('Suggestions the teacher explicitly rejected, with reasons.'),
   }),
   handler: async (
     input: {
@@ -36,6 +55,9 @@ export const recordReflectionTool = {
       surprises?: string;
       would_change_next?: string;
       overall_rating: 'very-helpful' | 'somewhat-helpful' | 'not-helpful';
+      needs_addressed?: string[];
+      needs_not_addressed?: string[];
+      rejected_suggestions?: Array<{ suggestion: string; reason: string }>;
     },
     context: { userId: string },
   ) => {
@@ -85,6 +107,9 @@ export const recordReflectionTool = {
         surprises: input.surprises,
         wouldChangeNext: input.would_change_next,
         overallRating: input.overall_rating,
+        needsAddressed: input.needs_addressed,
+        needsNotAddressed: input.needs_not_addressed,
+        rejectedSuggestions: input.rejected_suggestions,
       };
 
       await database

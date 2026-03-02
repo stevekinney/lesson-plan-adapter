@@ -11,6 +11,7 @@ import {
   ONBOARDING_REFERENCES,
 } from './lib/reference-lists.js';
 import { renderTeachingContext } from './lib/render-teaching-context.js';
+import adaptLessonOnboardingPreamble from './preambles/adapt-lesson-onboarding.md';
 
 const depthModeSchema = z
   .enum(['quick-scan', 'standard', 'deep-dive'])
@@ -69,10 +70,7 @@ export const adaptLessonPrompt = {
           existingContext: '',
         });
 
-        const preamble =
-          'The teacher tried to adapt a lesson plan but has no classroom profile yet. ' +
-          'Generate the onboarding artifact below so they can set up their profile. ' +
-          'After they paste their profile back, remind them to paste their lesson plan again.\n\n';
+        const preamble = adaptLessonOnboardingPreamble + '\n\n';
 
         const fullPrompt = preamble + rendered + '\n\n---\n\n' + onboardingReferences;
 
@@ -161,6 +159,49 @@ export const adaptLessonPrompt = {
             if (reflection.whatDidNotWork.length > 0) {
               historyLines.push(`  - What did not work: ${reflection.whatDidNotWork.join('; ')}`);
             }
+          }
+        }
+
+        if (recentAdaptations.length >= 2) {
+          const needsFrequency = new Map<string, number>();
+          const strategiesWorked: string[] = [];
+          const strategiesDidNotWork: string[] = [];
+
+          for (const adaptation of recentAdaptations) {
+            for (const need of adaptation.adaptationSummary.needsAddressed) {
+              needsFrequency.set(need, (needsFrequency.get(need) || 0) + 1);
+            }
+
+            const reflection = reflectionsByLesson.get(adaptation.id);
+            if (reflection) {
+              strategiesWorked.push(...reflection.whatWorked);
+              strategiesDidNotWork.push(...reflection.whatDidNotWork);
+            }
+          }
+
+          const recurringNeeds = [...needsFrequency.entries()]
+            .filter(([, count]) => count >= 2)
+            .map(([need]) => need);
+
+          historyLines.push('');
+          historyLines.push('### Recurring Patterns');
+
+          if (recurringNeeds.length > 0) {
+            historyLines.push(
+              `- **Recurring needs across lessons**: ${recurringNeeds.join(', ')}. These are consistently present — prioritize adaptations targeting them.`,
+            );
+          }
+
+          if (strategiesWorked.length > 0) {
+            historyLines.push(
+              `- **Strategies that have worked**: ${strategiesWorked.join('; ')}. Favor similar approaches.`,
+            );
+          }
+
+          if (strategiesDidNotWork.length > 0) {
+            historyLines.push(
+              `- **Strategies that have not worked**: ${strategiesDidNotWork.join('; ')}. Avoid similar approaches or explain why this time is different.`,
+            );
           }
         }
 

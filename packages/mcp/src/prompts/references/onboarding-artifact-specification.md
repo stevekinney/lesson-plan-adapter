@@ -27,6 +27,8 @@ Fields:
 - **Block length**: Number input with "minutes" label beside it. Placeholder: "e.g., 45"
 - **Students have devices**: Toggle switch with "Yes" / "No" label that updates with the toggle state
 - **State**: Text input, maxLength 2, uppercase, placeholder "e.g., TX"
+- **Teaching priorities**: Textarea, 2 rows, placeholder "What matters most in your teaching? (e.g., student independence, equity, building confidence)"
+- **Known constraints**: Textarea, 2 rows, placeholder "Any hard limits on what's feasible? (e.g., no para support, 30 students, no aide, limited prep time)"
 - **Additional context**: Textarea, 2-3 rows, placeholder "Anything else that affects how you teach (co-teaching, small class, specific student population, etc.)"
 
 If existing context is provided in the prompt, pre-fill these fields. Otherwise all start empty/default.
@@ -58,6 +60,8 @@ Subjects: {comma-separated selected subjects or "Not set"}
 Block Length: {value} minutes {or "Not set"}
 Devices: {Yes or No or "Not set"}
 State: {value or "Not set"}
+Teaching Priorities: {value or "None"}
+Known Constraints: {value or "None"}
 Additional Context: {value or "None"}
 
 Learning Needs:

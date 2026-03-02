@@ -35,16 +35,20 @@ Generate 4-6 specific adaptations for this activity. For each adaptation:
 4. **Preparation time** — estimated minutes needed to prepare this adaptation
 5. **Effort level** — quick-win (< 5 min prep), moderate (10-30 min), or deeper (requires redesign)
 6. **Materials needed** — list any materials, and note which ones could be generated with the create_material tool (word-bank, graphic-organizer, rubric, simplified-instructions, choice-board, sentence-starters, vocabulary-chart, checklist)
+7. **Key assumption** — one assumption you are making about the classroom or this activity that, if wrong, would change this recommendation (e.g., "Assumes students are comfortable sharing with a partner; if not, use written responses instead"). This invites the teacher to correct your reasoning.
+8. **Evidence basis** — classify as research-supported, practitioner-established, or context-dependent (see Strategy Reference for definitions)
 
 Do NOT repeat adaptations from the "Prior Adaptations Already Suggested" section. Build on them or go deeper.
 
-### Step 3: Potential Challenges
+### Step 3: Implementation Guidance
 
-Identify 2-3 challenges a teacher might face when implementing these adaptations:
+For each adaptation suggested in Step 2, provide:
 
-- What could go wrong?
-- How to troubleshoot?
-- What to watch for during the lesson?
+1. **What could go wrong** — one specific risk during implementation (e.g., "Students may not understand how to use the graphic organizer without modeling first")
+2. **What to watch for** — one observable indicator that tells the teacher whether the adaptation is working during the lesson (e.g., "If students are filling in the organizer without prompting by minute 5, it's working. If most are staring at it blankly, pause and model the first row.")
+3. **Quick adjustment** — what to do mid-lesson if the adaptation is not landing (e.g., "Switch from independent fill-in to whole-class modeling of the first two rows, then release to pairs")
+
+This helps teachers move from "try the suggestion" to "monitor and adjust in real time" — building their ability to evaluate AI-suggested strategies during actual instruction.
 
 ### Step 4: Material Offers
 

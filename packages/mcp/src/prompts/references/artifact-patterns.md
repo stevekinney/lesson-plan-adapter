@@ -24,7 +24,10 @@ Embed this JSON as a constant inside the React component. All top-level keys are
           "detail": "string — expanded implementation notes, examples, or templates",
           "tags": ["string array — learning need tag IDs this addresses"],
           "effort": "'quick-win' | 'moderate' | 'deeper'",
-          "category": "'representation' | 'expression' | 'engagement'"
+          "category": "'representation' | 'expression' | 'engagement'",
+          "consideredAlternative": "string — one approach considered but not suggested, with brief reason",
+          "assumptions": "string — 1-2 assumptions that, if wrong, would change this suggestion",
+          "evidenceBasis": "'research-supported' | 'practitioner-established' | 'context-dependent'"
         }
       ]
     }
@@ -62,6 +65,9 @@ Build the React component with this layout:
     - Rationale text in a subtle, secondary style below the suggestion — always visible, not hidden behind an expand. This is the "why" that helps teachers evaluate whether a suggestion fits their classroom.
     - Tag pills colored by UDL category with text labels (color must not be the sole indicator)
     - Effort badge with icon shape and text: filled circle + "Quick win", half circle + "Moderate", outlined circle + "Deeper"
+    - Evidence basis badge in small muted text beside the effort badge: "Research-supported", "Practitioner-established", or "Context-dependent"
+    - Assumptions callout in a subtle style (light amber-50 background, text-sm): the assumptions text, prefixed with "Assumes:". Always visible, not behind an expand toggle.
+    - Considered alternative text in subtle italic (text-sm, text-gray-500) below the assumptions: the consideredAlternative text, prefixed with "Also considered:". Always visible.
     - Expand/collapse for implementation detail
 - **Transition notes**: Between activity sections, subtle callouts for transition concerns.
 - **Sticky footer**: Live count ("4 of 12 suggestions selected"), "Copy Selected" and "Copy All" buttons.
@@ -69,6 +75,26 @@ Build the React component with this layout:
 ### Interaction
 
 Checking/unchecking updates the footer count in real time. Category filters show/hide adaptation cards (checkbox state preserved when hidden). Collapsing an activity shows just the header with suggestion count.
+
+#### Dismissal
+
+Each adaptation card includes a subtle "Not for my class" button (small text, gray-400, right-aligned). When clicked:
+
+1. The card reveals a one-line text input with placeholder "Optional: why doesn't this fit?" and a "Dismiss" confirmation button.
+2. On confirmation (with or without a reason), the card fades to reduced opacity (opacity-50) and moves to the bottom of its activity section, below non-dismissed cards.
+3. Dismissed cards show their reason (if provided) in small italic text: "Dismissed: {reason}".
+4. A dismissed card can be restored via an "Undo" button that replaces the dismiss button.
+
+The footer updates to show dismissed count alongside selected count: "4 of 12 selected · 2 dismissed".
+
+When copying, include a DISMISSED section at the end:
+
+```
+DISMISSED SUGGESTIONS
+- {suggestion text} — Reason: {reason or "No reason given"}
+```
+
+Omit the DISMISSED section if no cards were dismissed. Dismissed card data feeds into the `rejectedSuggestions` field when the teacher records a reflection.
 
 ### Copy to Clipboard
 

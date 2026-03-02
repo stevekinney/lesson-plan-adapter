@@ -17,6 +17,6 @@ Build a self-contained interactive React component using Tailwind utility classe
 
 1. **Header** with title (mode-dependent) and subtitle explaining the purpose
 2. **Learning Needs Grid** organized by UDL category (three columns on desktop, stacked on mobile) — see the Taxonomy Reference below for the complete tag list
-3. **Teaching Context Section** with optional fields for grade range, subjects, block length, devices, state, and additional context
+3. **Teaching Context Section** with optional fields for grade range, subjects, block length, devices, state, additional context, teaching priorities, and known constraints
 4. **Live Summary Panel** showing real-time count and natural language description of selected needs
 5. **Copy Button(s)** using the clipboard fallback pattern — see the Onboarding Artifact Specification reference below for exact copy formats and UI details

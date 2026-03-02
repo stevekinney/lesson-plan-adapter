@@ -22,6 +22,8 @@ export interface TeachingContext {
   studentsHaveDevices?: boolean;
   state?: string;
   additionalContext?: string;
+  teachingPriorities?: string;
+  knownConstraints?: string;
 }
 
 export interface AdaptationSummary {
@@ -35,12 +37,20 @@ export interface AdaptationSummary {
   needsAddressed: string[];
 }
 
+export interface RejectedSuggestion {
+  suggestion: string;
+  reason: string;
+}
+
 export interface ReflectionData {
   whatWorked: string[];
   whatDidNotWork: string[];
   surprises?: string;
   wouldChangeNext?: string;
   overallRating: 'very-helpful' | 'somewhat-helpful' | 'not-helpful';
+  needsAddressed?: string[];
+  needsNotAddressed?: string[];
+  rejectedSuggestions?: RejectedSuggestion[];
 }
 
 /**

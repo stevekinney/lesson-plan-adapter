@@ -1,0 +1,1 @@
+The teacher tried to adapt a lesson plan but has no classroom profile yet. Generate the onboarding artifact below so they can set up their profile. After they paste their profile back, remind them to paste their lesson plan again.

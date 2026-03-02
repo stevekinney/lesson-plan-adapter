@@ -32,12 +32,20 @@ Once the server is deployed, any teacher can connect it from Claude's settings:
 
 To adapt a lesson plan, paste it into the conversation and ask Claude to adapt it for your classroom.
 
+## Example Lesson Plans
+
+The `examples/` directory contains lesson plans you can paste directly into a conversation to try the adapter:
+
+- **[Analyzing Figurative Language in Poetry](examples/analyzing-figurative-language.md)** — 7th grade ELA, 50-minute block. A vocabulary-heavy poetry analysis lesson with dense reading, essay writing, and volunteer-only discussion.
+- **[Westward Expansion Through Primary Sources](examples/westward-expansion-primary-sources.md)** — 7th grade ELA / Social Studies, 45-minute block. An interdisciplinary primary source analysis lesson with document annotation, group discussion, and evidence-based writing.
+
 ## Project Structure
 
 ```
 applications/web/          SvelteKit app — UI, OAuth endpoints, MCP transport
 packages/database/         Drizzle schema, migrations, shared database client
 packages/mcp/              MCP server factory, tools, resources, prompts, taxonomy
+examples/                  Sample lesson plans for testing the adapter
 scripts/                   Migration runner
 ```
 

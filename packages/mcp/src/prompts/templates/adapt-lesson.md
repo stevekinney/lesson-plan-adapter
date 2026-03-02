@@ -35,6 +35,9 @@ For each activity, generate specific, actionable adaptation suggestions. Each su
 - Be classified by effort level (`quick-win`, `moderate`, or `deeper`)
 - Be classified by UDL category (representation, expression, or engagement)
 - Include implementation detail a teacher could act on immediately
+- Include a **considered alternative**: one approach you evaluated but chose not to suggest, with a brief reason why (e.g., "Considered station rotation, but the 30-minute block makes transitions too costly"). This helps the teacher see the reasoning process, not just the final recommendation.
+- Include a **key assumption**: 1-2 assumptions you made about the classroom or lesson that, if wrong, would change this suggestion (e.g., "Assumes students can work independently for 10 minutes; if not, pair them for this task"). This invites the teacher to correct your reasoning and builds their skill in evaluating AI output.
+- Include an **evidence basis** using one of these classifications: research-supported (backed by published UDL research or peer-reviewed studies), practitioner-established (widely used and endorsed by professional organizations), or context-dependent (may work well but depends heavily on implementation). See the evidence classification in the Strategy Reference.
 
 Aggregate where possible: if multiple needs point toward the same modification, combine them into one suggestion with multiple tags rather than repeating similar suggestions.
 

@@ -13,6 +13,18 @@ export const updateTeachingContextTool = {
     studentsHaveDevices: z.boolean().optional(),
     state: z.string().length(2).toUpperCase().optional(),
     additionalContext: z.string().optional(),
+    teachingPriorities: z
+      .string()
+      .optional()
+      .describe(
+        "The teacher's core teaching priorities or values (e.g., 'student independence', 'equity', 'engagement'). Used to weight adaptation suggestions toward what matters most to this teacher.",
+      ),
+    knownConstraints: z
+      .string()
+      .optional()
+      .describe(
+        "Hard constraints on the teacher's classroom (e.g., 'no para support', '30+ students', 'shared classroom'). Suggestions that violate stated constraints will not be generated.",
+      ),
   }),
   handler: async (input: Partial<TeachingContext>, context: { userId: string }) => {
     const requestLogger = logger.child({
