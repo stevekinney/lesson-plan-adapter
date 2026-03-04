@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "lesson-plan-adapter": {
-      "type": "url",
-      "url": "https://lesson-plans.up.railway.app/mcp"
-    }
-  }
-}
