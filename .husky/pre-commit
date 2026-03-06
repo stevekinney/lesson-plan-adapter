@@ -1,4 +1,5 @@
 set -e
 
 bun scripts/generate-skill-references.ts
+git add distribution/plugin/skills/lesson-plan-adapter/references/
 bunx lint-staged
