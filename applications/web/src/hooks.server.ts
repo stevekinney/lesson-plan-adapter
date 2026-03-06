@@ -63,6 +63,8 @@ export const handle: Handle = async ({ event, resolve }) => {
       response.headers.set(key, value);
     }
 
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+
     return response;
   }
 
@@ -75,5 +77,14 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.user = session?.user ?? null;
 
   // Delegate to Better Auth handler for /api/auth/* routes
-  return svelteKitHandler({ event, resolve, auth: getAuthentication(), building });
+  const response = await svelteKitHandler({ event, resolve, auth: getAuthentication(), building });
+
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  if (event.url.pathname === '/authorize') {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
+
+  return response;
 };

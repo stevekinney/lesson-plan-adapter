@@ -1,10 +1,33 @@
 <script lang="ts">
+  import { enhance, applyAction } from '$app/forms';
   import { page } from '$app/state';
   import { Button } from '@lesson-adapter/components/button';
   import { Badge } from '@lesson-adapter/components/badge';
 
   let { data } = $props();
   let form = $derived(page.form);
+
+  let completion: 'idle' | 'submitting' | 'authorized' | 'denied' = $state('idle');
+  let redirectUrl: string | null = $state(null);
+
+  function handleSubmit(action: 'authorized' | 'denied') {
+    return () => {
+      completion = 'submitting';
+
+      return async ({ result }: { result: { type: string; location?: string } }) => {
+        if (result.type === 'redirect' && result.location) {
+          completion = action;
+          redirectUrl = result.location;
+          setTimeout(() => {
+            if (redirectUrl) window.location.href = redirectUrl;
+          }, 1000);
+        } else if (result.type === 'failure' || result.type === 'error') {
+          completion = 'idle';
+          await applyAction(result);
+        }
+      };
+    };
+  }
 </script>
 
 <svelte:head>
@@ -12,9 +35,28 @@
 </svelte:head>
 
 <main class="authorize-page">
-  {#if form?.message}
+  {#if completion === 'authorized'}
     <div class="authorize-card">
-      <div class="error-icon" aria-hidden="true">
+      <div class="completion-icon completion-icon--success" aria-hidden="true">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg
+        >
+      </div>
+      <div class="completion-header">
+        <h1 class="completion-title">Connection Authorized</h1>
+        <p class="completion-description">You can close this tab.</p>
+      </div>
+    </div>
+  {:else if completion === 'denied'}
+    <div class="authorize-card">
+      <div class="completion-icon completion-icon--error" aria-hidden="true">
         <svg
           width="24"
           height="24"
@@ -32,14 +74,39 @@
           ></line></svg
         >
       </div>
-      <div class="error-header">
-        <h1 class="error-title">Authorization Failed</h1>
-        <p class="error-description">{form.message}</p>
+      <div class="completion-header">
+        <h1 class="completion-title">Access Denied</h1>
+        <p class="completion-description">The authorization request was denied.</p>
+      </div>
+    </div>
+  {:else if form?.message}
+    <div class="authorize-card">
+      <div class="completion-icon completion-icon--error" aria-hidden="true">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line
+            x1="9"
+            y1="9"
+            x2="15"
+            y2="15"
+          ></line></svg
+        >
+      </div>
+      <div class="completion-header">
+        <h1 class="completion-title">Authorization Failed</h1>
+        <p class="completion-description">{form.message}</p>
       </div>
     </div>
   {:else if data.error}
     <div class="authorize-card">
-      <div class="error-icon" aria-hidden="true">
+      <div class="completion-icon completion-icon--error" aria-hidden="true">
         <svg
           width="24"
           height="24"
@@ -57,9 +124,9 @@
           ></line></svg
         >
       </div>
-      <div class="error-header">
-        <h1 class="error-title">Authorization Error</h1>
-        <p class="error-description">{data.error}</p>
+      <div class="completion-header">
+        <h1 class="completion-title">Authorization Error</h1>
+        <p class="completion-description">{data.error}</p>
       </div>
     </div>
   {:else}
@@ -91,21 +158,45 @@
       </p>
 
       <div class="authorize-actions">
-        <form method="POST" action="?/approve" class="action-form">
+        <form
+          method="POST"
+          action="?/approve"
+          class="action-form"
+          use:enhance={handleSubmit('authorized')}
+        >
           <input type="hidden" name="client_id" value={data.clientId} />
           <input type="hidden" name="redirect_uri" value={data.redirectUri} />
           <input type="hidden" name="code_challenge" value={data.codeChallenge} />
           <input type="hidden" name="code_challenge_method" value={data.codeChallengeMethod} />
           <input type="hidden" name="state" value={data.state || ''} />
           <input type="hidden" name="scope" value={data.scope} />
-          <Button type="submit" variant="primary" size="md" fullWidth label="Allow Access" />
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            label={completion === 'submitting' ? 'Authorizing…' : 'Allow Access'}
+            disabled={completion === 'submitting'}
+          />
         </form>
 
-        <form method="POST" action="?/deny" class="action-form">
+        <form
+          method="POST"
+          action="?/deny"
+          class="action-form"
+          use:enhance={handleSubmit('denied')}
+        >
           <input type="hidden" name="client_id" value={data.clientId} />
           <input type="hidden" name="redirect_uri" value={data.redirectUri} />
           <input type="hidden" name="state" value={data.state || ''} />
-          <Button type="submit" variant="ghost" size="md" fullWidth label="Deny" />
+          <Button
+            type="submit"
+            variant="ghost"
+            size="md"
+            fullWidth
+            label="Deny"
+            disabled={completion === 'submitting'}
+          />
         </form>
       </div>
     </div>
@@ -168,6 +259,7 @@
   .detail-row {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-0-5);
   }
 
@@ -200,33 +292,41 @@
     display: contents;
   }
 
-  /* Error state */
+  /* Completion states (success, denied, error) */
 
-  .error-icon {
+  .completion-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 3rem;
     height: 3rem;
     border-radius: var(--radius-full);
+  }
+
+  .completion-icon--success {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .completion-icon--error {
     background: var(--danger-bg);
     color: var(--danger);
   }
 
-  .error-header {
+  .completion-header {
     text-align: center;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
   }
 
-  .error-title {
+  .completion-title {
     font-size: var(--text-lg);
     font-weight: var(--font-semibold);
     color: var(--text);
   }
 
-  .error-description {
+  .completion-description {
     font-size: var(--text-sm);
     color: var(--text-muted);
   }

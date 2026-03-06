@@ -9,6 +9,12 @@ import { corsHeaders, handleCorsPreflight } from '$lib/cors';
 
 export const OPTIONS = handleCorsPreflight;
 
+const tokenResponseHeaders = {
+  'Cache-Control': 'no-store',
+  Pragma: 'no-cache',
+  ...corsHeaders,
+};
+
 function constantTimeEquals(a: string, b: string): boolean {
   const bufferA = Buffer.from(a, 'utf-8');
   const bufferB = Buffer.from(b, 'utf-8');
@@ -26,19 +32,25 @@ export const POST: RequestHandler = async ({ request }) => {
   } else if (contentType.includes('application/json')) {
     body = await request.json();
   } else {
-    return json({ error: 'unsupported_content_type' }, { status: 400 });
+    return json(
+      { error: 'unsupported_content_type' },
+      { status: 400, headers: tokenResponseHeaders },
+    );
   }
 
   const { grant_type, code, redirect_uri, client_id, client_secret, code_verifier } = body;
 
   if (grant_type !== 'authorization_code') {
-    return json({ error: 'unsupported_grant_type' }, { status: 400 });
+    return json(
+      { error: 'unsupported_grant_type' },
+      { status: 400, headers: tokenResponseHeaders },
+    );
   }
 
   if (!code || !redirect_uri || !client_id || !code_verifier) {
     return json(
       { error: 'invalid_request', error_description: 'Missing required parameters' },
-      { status: 400 },
+      { status: 400, headers: tokenResponseHeaders },
     );
   }
 
@@ -64,7 +76,7 @@ export const POST: RequestHandler = async ({ request }) => {
         error: 'invalid_grant',
         error_description: 'Authorization code not found, already used, or expired',
       },
-      { status: 400 },
+      { status: 400, headers: tokenResponseHeaders },
     );
   }
 
@@ -72,7 +84,7 @@ export const POST: RequestHandler = async ({ request }) => {
   if (authorizationCode.redirectUri !== redirect_uri) {
     return json(
       { error: 'invalid_grant', error_description: 'Redirect URI mismatch' },
-      { status: 400 },
+      { status: 400, headers: tokenResponseHeaders },
     );
   }
 
@@ -84,11 +96,11 @@ export const POST: RequestHandler = async ({ request }) => {
       .limit(1);
 
     if (!client) {
-      return json({ error: 'invalid_client' }, { status: 401 });
+      return json({ error: 'invalid_client' }, { status: 401, headers: tokenResponseHeaders });
     }
 
     if (!constantTimeEquals(client.clientSecret, hashCredential(client_secret))) {
-      return json({ error: 'invalid_client' }, { status: 401 });
+      return json({ error: 'invalid_client' }, { status: 401, headers: tokenResponseHeaders });
     }
   }
 
@@ -97,7 +109,7 @@ export const POST: RequestHandler = async ({ request }) => {
   if (!constantTimeEquals(challenge, authorizationCode.codeChallenge)) {
     return json(
       { error: 'invalid_grant', error_description: 'PKCE verification failed' },
-      { status: 400 },
+      { status: 400, headers: tokenResponseHeaders },
     );
   }
 
@@ -114,7 +126,7 @@ export const POST: RequestHandler = async ({ request }) => {
         error: 'invalid_grant',
         error_description: 'Authorization code already used',
       },
-      { status: 400 },
+      { status: 400, headers: tokenResponseHeaders },
     );
   }
 
@@ -138,12 +150,6 @@ export const POST: RequestHandler = async ({ request }) => {
       expires_in: tokenTtlSeconds,
       scope: authorizationCode.scope || '',
     },
-    {
-      headers: {
-        'Cache-Control': 'no-store',
-        Pragma: 'no-cache',
-        ...corsHeaders,
-      },
-    },
+    { headers: tokenResponseHeaders },
   );
 };
