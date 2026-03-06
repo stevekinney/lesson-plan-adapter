@@ -1,5 +1,6 @@
 export { createMcpServer } from './server.js';
-export { generateNeedsSummary } from './lib/taxonomy.js';
+export { TAXONOMY, isValidTag, getTagCategory, generateNeedsSummary } from './lib/taxonomy.js';
+export type { UdlCategory } from './lib/taxonomy.js';
 export { createMaterialTool } from './tools/create-material.js';
 export { simplifyTextTool } from './tools/simplify-text.js';
 export { saveLessonAdaptationTool } from './tools/save-lesson-adaptation.js';

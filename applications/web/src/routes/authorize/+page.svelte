@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ActionResult } from '@sveltejs/kit';
   import { enhance, applyAction } from '$app/forms';
   import { page } from '$app/state';
   import { Button } from '@lesson-adapter/components/button';
@@ -14,7 +15,7 @@
     return () => {
       completion = 'submitting';
 
-      return async ({ result }: { result: { type: string; location?: string } }) => {
+      return async ({ result }: { result: ActionResult }) => {
         if (result.type === 'redirect' && result.location) {
           completion = action;
           redirectUrl = result.location;

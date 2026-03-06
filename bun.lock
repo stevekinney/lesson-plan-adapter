@@ -89,6 +89,7 @@
     },
   },
   "overrides": {
+    "drizzle-orm": "0.41.0",
     "zod": "^4.0.0",
   },
   "packages": {

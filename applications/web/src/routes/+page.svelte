@@ -1,8 +1,15 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { enhance, applyAction } from '$app/forms';
   import { Button } from '@lesson-adapter/components/button';
   import { Card } from '@lesson-adapter/components/card';
   import { Badge } from '@lesson-adapter/components/badge';
+  import { Checkbox } from '@lesson-adapter/components/checkbox';
+  import { Input } from '@lesson-adapter/components/input';
+  import { Select } from '@lesson-adapter/components/select';
+  import { Textarea } from '@lesson-adapter/components/textarea';
+  import { TAXONOMY } from '@lesson-adapter/mcp';
+  import type { TeachingContext } from '@lesson-adapter/database/schema';
 
   const categoryLabels: Record<string, string> = {
     representation: 'Representation',
@@ -19,8 +26,55 @@
     return grouped;
   });
 
+  const taxonomyByCategory = $derived.by(() => {
+    const grouped: Record<string, (typeof TAXONOMY)[number][]> = {};
+    for (const entry of TAXONOMY) {
+      (grouped[entry.category] ??= []).push(entry);
+    }
+    return grouped;
+  });
+
   function formatTag(tag: string): string {
     return tag.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  let editingNeeds = $state(false);
+  let editingTeachingContext = $state(false);
+
+  const currentTags = $derived(
+    new Set((page.data.profile?.needs ?? []).map((n: { tag: string }) => n.tag)),
+  );
+
+  const teachingContext = $derived<TeachingContext>(page.data.profile?.teachingContext ?? {});
+
+  const hasTeachingContext = $derived(
+    teachingContext.gradeRange ||
+      (teachingContext.subjectAreas && teachingContext.subjectAreas.length > 0) ||
+      teachingContext.typicalBlockMinutes ||
+      teachingContext.studentsHaveDevices !== undefined ||
+      teachingContext.state ||
+      teachingContext.additionalContext ||
+      teachingContext.teachingPriorities ||
+      teachingContext.knownConstraints,
+  );
+
+  const teachingContextFields: { key: keyof TeachingContext; label: string }[] = [
+    { key: 'gradeRange', label: 'Grade Range' },
+    { key: 'subjectAreas', label: 'Subject Areas' },
+    { key: 'typicalBlockMinutes', label: 'Block Length' },
+    { key: 'studentsHaveDevices', label: 'Student Devices' },
+    { key: 'state', label: 'State' },
+    { key: 'teachingPriorities', label: 'Teaching Priorities' },
+    { key: 'knownConstraints', label: 'Known Constraints' },
+    { key: 'additionalContext', label: 'Additional Context' },
+  ];
+
+  function formatContextValue(key: keyof TeachingContext, value: unknown): string {
+    if (value === undefined || value === null) return '';
+    if (key === 'subjectAreas' && Array.isArray(value)) return value.join(', ');
+    if (key === 'typicalBlockMinutes') return `${value} minutes`;
+    if (key === 'studentsHaveDevices') return value ? 'Yes' : 'No';
+    return String(value);
   }
 </script>
 
@@ -38,31 +92,208 @@
         </p>
       </div>
 
+      <!-- Learning Needs Card -->
       <Card title="Learning Needs" description="{page.data.profile.needs.length} configured">
-        <div class="needs-list">
-          {#each Object.entries(needsByCategory) as [category, tags] (category)}
-            <div class="needs-category">
-              <h3 class="category-label">{categoryLabels[category] ?? category}</h3>
-              <div class="needs-tags">
-                {#each tags as tag (tag)}
-                  <Badge label={formatTag(tag)} />
-                {/each}
-              </div>
+        {#snippet actions()}
+          {#if !editingNeeds}
+            <Button variant="ghost" size="xs" label="Edit" onclick={() => (editingNeeds = true)} />
+          {/if}
+        {/snippet}
+        {#if editingNeeds}
+          <form
+            method="POST"
+            action="?/updateLearningNeeds"
+            use:enhance={() => {
+              return async ({ result }) => {
+                if (result.type === 'success') {
+                  editingNeeds = false;
+                }
+                await applyAction(result);
+              };
+            }}
+          >
+            {#if page.form?.action === 'updateLearningNeeds' && page.form?.error}
+              <p class="form-error">{page.form.error}</p>
+            {/if}
+            <div class="needs-edit-list">
+              {#each Object.entries(taxonomyByCategory) as [category, tags] (category)}
+                <div class="needs-category">
+                  <h3 class="category-label">{categoryLabels[category] ?? category}</h3>
+                  <div class="needs-checkboxes">
+                    {#each tags as entry (entry.tag)}
+                      <Checkbox
+                        id="need-{entry.tag}"
+                        name="needs"
+                        value={entry.tag}
+                        label={entry.label}
+                        compact
+                        checked={currentTags.has(entry.tag)}
+                      />
+                    {/each}
+                  </div>
+                </div>
+              {/each}
             </div>
-          {/each}
-        </div>
+            <div class="form-footer">
+              <Button type="submit" variant="primary" size="xs" label="Save" />
+              <Button
+                variant="ghost"
+                size="xs"
+                label="Cancel"
+                onclick={() => (editingNeeds = false)}
+              />
+            </div>
+          </form>
+        {:else}
+          <div class="needs-list">
+            {#each Object.entries(needsByCategory) as [category, tags] (category)}
+              <div class="needs-category">
+                <h3 class="category-label">{categoryLabels[category] ?? category}</h3>
+                <div class="needs-tags">
+                  {#each tags as tag (tag)}
+                    <Badge label={formatTag(tag)} />
+                  {/each}
+                </div>
+              </div>
+            {:else}
+              <p class="empty-text">No learning needs configured yet.</p>
+            {/each}
+          </div>
+        {/if}
       </Card>
 
-      <Card title="Next Steps">
-        <ol class="next-steps">
-          <li>Open a new conversation in Claude</li>
-          <li>Share a lesson plan you'd like to adapt</li>
-          <li>Review the suggestions and decide what fits your classroom</li>
-        </ol>
-        <p class="next-steps-hint">
-          To update your classroom profile, ask Claude:
-          <strong>"Help me update my classroom profile."</strong>
-        </p>
+      <!-- Teaching Context Card -->
+      <Card title="Teaching Context">
+        {#snippet actions()}
+          {#if !editingTeachingContext}
+            <Button
+              variant="ghost"
+              size="xs"
+              label="Edit"
+              onclick={() => (editingTeachingContext = true)}
+            />
+          {/if}
+        {/snippet}
+        {#if editingTeachingContext}
+          <form
+            method="POST"
+            action="?/updateTeachingContext"
+            use:enhance={() => {
+              return async ({ result }) => {
+                if (result.type === 'success') {
+                  editingTeachingContext = false;
+                }
+                await applyAction(result);
+              };
+            }}
+          >
+            {#if page.form?.action === 'updateTeachingContext' && page.form?.error}
+              <p class="form-error">{page.form.error}</p>
+            {/if}
+            <div class="context-form">
+              <Select
+                id="gradeRange"
+                name="gradeRange"
+                label="Grade Range"
+                value={teachingContext.gradeRange ?? ''}
+              >
+                <option value="">Not set</option>
+                <option value="K-2">K-2</option>
+                <option value="3-5">3-5</option>
+                <option value="6-8">6-8</option>
+                <option value="9-12">9-12</option>
+              </Select>
+
+              <Input
+                id="subjectAreas"
+                name="subjectAreas"
+                label="Subject Areas"
+                description="Comma-separated (e.g. Math, Science, ELA)"
+                value={teachingContext.subjectAreas?.join(', ') ?? ''}
+              />
+
+              <Input
+                id="typicalBlockMinutes"
+                name="typicalBlockMinutes"
+                label="Block Length (minutes)"
+                type="number"
+                value={teachingContext.typicalBlockMinutes?.toString() ?? ''}
+              />
+
+              <Select
+                id="studentsHaveDevices"
+                name="studentsHaveDevices"
+                label="Students Have Devices"
+                value={teachingContext.studentsHaveDevices === true
+                  ? 'yes'
+                  : teachingContext.studentsHaveDevices === false
+                    ? 'no'
+                    : ''}
+              >
+                <option value="">Not set</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </Select>
+
+              <Input
+                id="state"
+                name="state"
+                label="State"
+                maxlength={2}
+                description="2-letter abbreviation (e.g. CA, NY)"
+                value={teachingContext.state ?? ''}
+              />
+
+              <Textarea
+                id="teachingPriorities"
+                name="teachingPriorities"
+                label="Teaching Priorities"
+                description="Core priorities or values (e.g. student independence, equity)"
+                value={teachingContext.teachingPriorities ?? ''}
+              />
+
+              <Textarea
+                id="knownConstraints"
+                name="knownConstraints"
+                label="Known Constraints"
+                description="Hard constraints (e.g. no para support, 30+ students)"
+                value={teachingContext.knownConstraints ?? ''}
+              />
+
+              <Textarea
+                id="additionalContext"
+                name="additionalContext"
+                label="Additional Context"
+                value={teachingContext.additionalContext ?? ''}
+              />
+            </div>
+            <div class="form-footer">
+              <Button type="submit" variant="primary" size="xs" label="Save" />
+              <Button
+                variant="ghost"
+                size="xs"
+                label="Cancel"
+                onclick={() => (editingTeachingContext = false)}
+              />
+            </div>
+          </form>
+        {:else if hasTeachingContext}
+          <dl class="context-list">
+            {#each teachingContextFields as field (field.key)}
+              {@const value = teachingContext[field.key]}
+              {#if value !== undefined && value !== null}
+                <div class="context-item">
+                  <dt class="context-label">{field.label}</dt>
+                  <dd class="context-value">{formatContextValue(field.key, value)}</dd>
+                </div>
+              {/if}
+            {/each}
+          </dl>
+        {:else}
+          <p class="empty-text">
+            No teaching context configured yet. Click Edit to add details about your classroom.
+          </p>
+        {/if}
       </Card>
 
       <form method="POST" action="?/signOut" class="sign-out">
@@ -411,18 +642,63 @@
     gap: var(--space-1-5);
   }
 
-  .next-steps {
-    padding-left: var(--space-4);
+  .needs-edit-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    color: var(--text-muted);
+    gap: var(--space-4);
   }
 
-  .next-steps-hint {
-    margin-top: var(--space-3);
+  .needs-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .context-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .context-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .context-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-0-5);
+  }
+
+  .context-label {
     font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .context-value {
+    font-size: var(--text-sm);
+    color: var(--text);
+  }
+
+  .form-footer {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .form-error {
+    font-size: var(--text-sm);
+    color: var(--text-error, oklch(55% 0.2 25));
+    margin-bottom: var(--space-3);
+  }
+
+  .empty-text {
+    font-size: var(--text-sm);
     color: var(--text-subtle);
   }
 

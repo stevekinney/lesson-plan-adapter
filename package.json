@@ -43,6 +43,7 @@
   },
   "packageManager": "bun@1.2.4",
   "overrides": {
+    "drizzle-orm": "0.41.0",
     "zod": "^4.0.0"
   }
 }
