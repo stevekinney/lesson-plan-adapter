@@ -27,6 +27,42 @@ export default tseslint.config(
     },
   },
   {
+    // Prevent client-side Svelte files from importing server-only packages.
+    // These barrel exports pull in env vars, database clients, and MCP SDK
+    // code that crashes in the browser. Use subpath exports instead
+    // (e.g., @lesson-adapter/mcp/taxonomy).
+    files: ['**/*.svelte'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@lesson-adapter/mcp',
+              message:
+                'Import from a subpath (e.g., @lesson-adapter/mcp/taxonomy) to avoid pulling server-only code into the client bundle.',
+            },
+            {
+              name: '@lesson-adapter/mcp/logger',
+              message:
+                'The logger is server-only. Use it in +page.server.ts or +server.ts instead.',
+            },
+            {
+              name: '@lesson-adapter/mcp/env',
+              message:
+                'Environment variables are server-only. Use them in +page.server.ts or +server.ts instead.',
+            },
+            {
+              name: '@lesson-adapter/database',
+              message:
+                'The database client is server-only. Use it in +page.server.ts or +server.ts instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: ['**/node_modules/', '**/.svelte-kit/', '**/build/', '**/dist/', '**/.turbo/'],
   },
 );
