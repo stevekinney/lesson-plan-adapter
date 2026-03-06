@@ -14,6 +14,10 @@ describe('database schema exports', () => {
     expect(schema.oauthTokens).toBeDefined();
   });
 
+  it('exports oauthRefreshTokens', () => {
+    expect(schema.oauthRefreshTokens).toBeDefined();
+  });
+
   it('exports mcpSessions', () => {
     expect(schema.mcpSessions).toBeDefined();
   });

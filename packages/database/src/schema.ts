@@ -158,6 +158,21 @@ export const oauthTokens = pgTable('oauth_tokens', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const oauthRefreshTokens = pgTable('oauth_refresh_tokens', {
+  refreshToken: text('refresh_token').primaryKey(),
+  clientId: text('client_id')
+    .notNull()
+    .references(() => oauthClients.clientId),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => neonAuthUsers.id),
+  scope: text('scope').default(''),
+  accessTokenHash: text('access_token_hash').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const mcpSessions = pgTable('mcp_sessions', {
   sessionId: text('session_id').primaryKey(),
   userId: uuid('user_id')
