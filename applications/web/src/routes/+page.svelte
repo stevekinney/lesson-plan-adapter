@@ -17,15 +17,6 @@
     engagement: 'Engagement',
   };
 
-  const needsByCategory = $derived.by(() => {
-    const needs = page.data.profile?.needs ?? [];
-    const grouped: Record<string, string[]> = {};
-    for (const need of needs) {
-      (grouped[need.category] ??= []).push(need.tag);
-    }
-    return grouped;
-  });
-
   const taxonomyByCategory = $derived.by(() => {
     const grouped: Record<string, (typeof TAXONOMY)[number][]> = {};
     for (const entry of TAXONOMY) {
@@ -34,47 +25,79 @@
     return grouped;
   });
 
-  function formatTag(tag: string): string {
-    return tag.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  }
+  // ── Server-derived state ──
 
-  let editingNeeds = $state(false);
-  let editingTeachingContext = $state(false);
-
-  const currentTags = $derived(
+  const serverNeedTags = $derived(
     new Set((page.data.profile?.needs ?? []).map((n: { tag: string }) => n.tag)),
   );
 
-  const teachingContext = $derived<TeachingContext>(page.data.profile?.teachingContext ?? {});
+  const serverContext = $derived<TeachingContext>(page.data.profile?.teachingContext ?? {});
 
-  const hasTeachingContext = $derived(
-    teachingContext.gradeRange ||
-      (teachingContext.subjectAreas && teachingContext.subjectAreas.length > 0) ||
-      teachingContext.typicalBlockMinutes ||
-      teachingContext.studentsHaveDevices !== undefined ||
-      teachingContext.state ||
-      teachingContext.additionalContext ||
-      teachingContext.teachingPriorities ||
-      teachingContext.knownConstraints,
+  // ── Local form state: Learning Needs ──
+
+  let checkedNeeds: Record<string, boolean> = $state(
+    Object.fromEntries(
+      TAXONOMY.map((t) => [
+        t.tag,
+        (page.data.profile?.needs ?? []).some((n: { tag: string }) => n.tag === t.tag),
+      ]),
+    ),
   );
 
-  const teachingContextFields: { key: keyof TeachingContext; label: string }[] = [
-    { key: 'gradeRange', label: 'Grade Range' },
-    { key: 'subjectAreas', label: 'Subject Areas' },
-    { key: 'typicalBlockMinutes', label: 'Block Length' },
-    { key: 'studentsHaveDevices', label: 'Student Devices' },
-    { key: 'state', label: 'State' },
-    { key: 'teachingPriorities', label: 'Teaching Priorities' },
-    { key: 'knownConstraints', label: 'Known Constraints' },
-    { key: 'additionalContext', label: 'Additional Context' },
-  ];
+  const needsCount = $derived(Object.values(checkedNeeds).filter(Boolean).length);
 
-  function formatContextValue(key: keyof TeachingContext, value: unknown): string {
-    if (value === undefined || value === null) return '';
-    if (key === 'subjectAreas' && Array.isArray(value)) return value.join(', ');
-    if (key === 'typicalBlockMinutes') return `${value} minutes`;
-    if (key === 'studentsHaveDevices') return value ? 'Yes' : 'No';
-    return String(value);
+  const needsDirty = $derived(
+    TAXONOMY.some((t) => checkedNeeds[t.tag] !== serverNeedTags.has(t.tag)),
+  );
+
+  function revertNeeds() {
+    for (const entry of TAXONOMY) {
+      checkedNeeds[entry.tag] = serverNeedTags.has(entry.tag);
+    }
+  }
+
+  // ── Local form state: Teaching Context ──
+
+  function devicesFormValue(value: boolean | undefined | null): string {
+    if (value === true) return 'yes';
+    if (value === false) return 'no';
+    return '';
+  }
+
+  let gradeRange = $state(page.data.profile?.teachingContext?.gradeRange ?? '');
+  let subjectAreas = $state(page.data.profile?.teachingContext?.subjectAreas?.join(', ') ?? '');
+  let typicalBlockMinutes = $state(
+    page.data.profile?.teachingContext?.typicalBlockMinutes?.toString() ?? '',
+  );
+  let studentsHaveDevices = $state(
+    devicesFormValue(page.data.profile?.teachingContext?.studentsHaveDevices),
+  );
+  let teachingState = $state(page.data.profile?.teachingContext?.state ?? '');
+  let teachingPriorities = $state(page.data.profile?.teachingContext?.teachingPriorities ?? '');
+  let knownConstraints = $state(page.data.profile?.teachingContext?.knownConstraints ?? '');
+  let additionalContext = $state(page.data.profile?.teachingContext?.additionalContext ?? '');
+
+  const contextDirty = $derived(
+    gradeRange !== (serverContext.gradeRange ?? '') ||
+      subjectAreas !== (serverContext.subjectAreas?.join(', ') ?? '') ||
+      typicalBlockMinutes !== (serverContext.typicalBlockMinutes?.toString() ?? '') ||
+      studentsHaveDevices !== devicesFormValue(serverContext.studentsHaveDevices) ||
+      teachingState !== (serverContext.state ?? '') ||
+      teachingPriorities !== (serverContext.teachingPriorities ?? '') ||
+      knownConstraints !== (serverContext.knownConstraints ?? '') ||
+      additionalContext !== (serverContext.additionalContext ?? ''),
+  );
+
+  function revertContext() {
+    const ctx = page.data.profile?.teachingContext ?? {};
+    gradeRange = ctx.gradeRange ?? '';
+    subjectAreas = ctx.subjectAreas?.join(', ') ?? '';
+    typicalBlockMinutes = ctx.typicalBlockMinutes?.toString() ?? '';
+    studentsHaveDevices = devicesFormValue(ctx.studentsHaveDevices);
+    teachingState = ctx.state ?? '';
+    teachingPriorities = ctx.teachingPriorities ?? '';
+    knownConstraints = ctx.knownConstraints ?? '';
+    additionalContext = ctx.additionalContext ?? '';
   }
 </script>
 
@@ -92,26 +115,31 @@
         </p>
       </div>
 
-      <!-- Learning Needs Card -->
-      <Card title="Learning Needs" description="{page.data.profile.needs.length} configured">
-        {#snippet actions()}
-          {#if !editingNeeds}
-            <Button variant="ghost" size="xs" label="Edit" onclick={() => (editingNeeds = true)} />
-          {/if}
-        {/snippet}
-        {#if editingNeeds}
-          <form
-            method="POST"
-            action="?/updateLearningNeeds"
-            use:enhance={() => {
-              return async ({ result }) => {
-                if (result.type === 'success') {
-                  editingNeeds = false;
-                }
-                await applyAction(result);
-              };
-            }}
-          >
+      <div class="dashboard-grid">
+        <!-- Learning Needs -->
+        <form
+          method="POST"
+          action="?/updateLearningNeeds"
+          use:enhance={() => {
+            return async ({ result }) => {
+              await applyAction(result);
+              if (result.type === 'success') revertNeeds();
+            };
+          }}
+        >
+          <Card title="Learning Needs" description="{needsCount} selected">
+            {#snippet actions()}
+              {#if needsDirty}
+                <Button type="submit" variant="primary" size="xs" label="Save" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  label="Revert"
+                  onclick={revertNeeds}
+                />
+              {/if}
+            {/snippet}
             {#if page.form?.action === 'updateLearningNeeds' && page.form?.error}
               <p class="form-error">{page.form.error}</p>
             {/if}
@@ -127,174 +155,129 @@
                         value={entry.tag}
                         label={entry.label}
                         compact
-                        checked={currentTags.has(entry.tag)}
+                        bind:checked={checkedNeeds[entry.tag]}
                       />
                     {/each}
                   </div>
                 </div>
               {/each}
             </div>
-            <div class="form-footer">
-              <Button type="submit" variant="primary" size="xs" label="Save" />
-              <Button
-                variant="ghost"
-                size="xs"
-                label="Cancel"
-                onclick={() => (editingNeeds = false)}
-              />
-            </div>
-          </form>
-        {:else}
-          <div class="needs-list">
-            {#each Object.entries(needsByCategory) as [category, tags] (category)}
-              <div class="needs-category">
-                <h3 class="category-label">{categoryLabels[category] ?? category}</h3>
-                <div class="needs-tags">
-                  {#each tags as tag (tag)}
-                    <Badge label={formatTag(tag)} />
-                  {/each}
-                </div>
-              </div>
-            {:else}
-              <p class="empty-text">No learning needs configured yet.</p>
-            {/each}
-          </div>
-        {/if}
-      </Card>
+          </Card>
+        </form>
 
-      <!-- Teaching Context Card -->
-      <Card title="Teaching Context">
-        {#snippet actions()}
-          {#if !editingTeachingContext}
-            <Button
-              variant="ghost"
-              size="xs"
-              label="Edit"
-              onclick={() => (editingTeachingContext = true)}
-            />
-          {/if}
-        {/snippet}
-        {#if editingTeachingContext}
+        <!-- Right column: Teaching Context + Next Steps -->
+        <div class="dashboard-column">
           <form
             method="POST"
             action="?/updateTeachingContext"
             use:enhance={() => {
               return async ({ result }) => {
-                if (result.type === 'success') {
-                  editingTeachingContext = false;
-                }
                 await applyAction(result);
+                if (result.type === 'success') revertContext();
               };
             }}
           >
-            {#if page.form?.action === 'updateTeachingContext' && page.form?.error}
-              <p class="form-error">{page.form.error}</p>
-            {/if}
-            <div class="context-form">
-              <Select
-                id="gradeRange"
-                name="gradeRange"
-                label="Grade Range"
-                value={teachingContext.gradeRange ?? ''}
-              >
-                <option value="">Not set</option>
-                <option value="K-2">K-2</option>
-                <option value="3-5">3-5</option>
-                <option value="6-8">6-8</option>
-                <option value="9-12">9-12</option>
-              </Select>
-
-              <Input
-                id="subjectAreas"
-                name="subjectAreas"
-                label="Subject Areas"
-                description="Comma-separated (e.g. Math, Science, ELA)"
-                value={teachingContext.subjectAreas?.join(', ') ?? ''}
-              />
-
-              <Input
-                id="typicalBlockMinutes"
-                name="typicalBlockMinutes"
-                label="Block Length (minutes)"
-                type="number"
-                value={teachingContext.typicalBlockMinutes?.toString() ?? ''}
-              />
-
-              <Select
-                id="studentsHaveDevices"
-                name="studentsHaveDevices"
-                label="Students Have Devices"
-                value={teachingContext.studentsHaveDevices === true
-                  ? 'yes'
-                  : teachingContext.studentsHaveDevices === false
-                    ? 'no'
-                    : ''}
-              >
-                <option value="">Not set</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </Select>
-
-              <Input
-                id="state"
-                name="state"
-                label="State"
-                maxlength={2}
-                description="2-letter abbreviation (e.g. CA, NY)"
-                value={teachingContext.state ?? ''}
-              />
-
-              <Textarea
-                id="teachingPriorities"
-                name="teachingPriorities"
-                label="Teaching Priorities"
-                description="Core priorities or values (e.g. student independence, equity)"
-                value={teachingContext.teachingPriorities ?? ''}
-              />
-
-              <Textarea
-                id="knownConstraints"
-                name="knownConstraints"
-                label="Known Constraints"
-                description="Hard constraints (e.g. no para support, 30+ students)"
-                value={teachingContext.knownConstraints ?? ''}
-              />
-
-              <Textarea
-                id="additionalContext"
-                name="additionalContext"
-                label="Additional Context"
-                value={teachingContext.additionalContext ?? ''}
-              />
-            </div>
-            <div class="form-footer">
-              <Button type="submit" variant="primary" size="xs" label="Save" />
-              <Button
-                variant="ghost"
-                size="xs"
-                label="Cancel"
-                onclick={() => (editingTeachingContext = false)}
-              />
-            </div>
-          </form>
-        {:else if hasTeachingContext}
-          <dl class="context-list">
-            {#each teachingContextFields as field (field.key)}
-              {@const value = teachingContext[field.key]}
-              {#if value !== undefined && value !== null}
-                <div class="context-item">
-                  <dt class="context-label">{field.label}</dt>
-                  <dd class="context-value">{formatContextValue(field.key, value)}</dd>
-                </div>
+            <Card title="Teaching Context">
+              {#snippet actions()}
+                {#if contextDirty}
+                  <Button type="submit" variant="primary" size="xs" label="Save" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    label="Revert"
+                    onclick={revertContext}
+                  />
+                {/if}
+              {/snippet}
+              {#if page.form?.action === 'updateTeachingContext' && page.form?.error}
+                <p class="form-error">{page.form.error}</p>
               {/if}
-            {/each}
-          </dl>
-        {:else}
-          <p class="empty-text">
-            No teaching context configured yet. Click Edit to add details about your classroom.
-          </p>
-        {/if}
-      </Card>
+              <div class="context-form">
+                <Select
+                  id="gradeRange"
+                  name="gradeRange"
+                  label="Grade Range"
+                  bind:value={gradeRange}
+                >
+                  <option value="">Not set</option>
+                  <option value="K-2">K-2</option>
+                  <option value="3-5">3-5</option>
+                  <option value="6-8">6-8</option>
+                  <option value="9-12">9-12</option>
+                </Select>
+
+                <Input
+                  id="subjectAreas"
+                  name="subjectAreas"
+                  label="Subject Areas"
+                  description="Comma-separated (e.g. Math, Science, ELA)"
+                  bind:value={subjectAreas}
+                />
+
+                <Input
+                  id="typicalBlockMinutes"
+                  name="typicalBlockMinutes"
+                  label="Block Length (minutes)"
+                  type="number"
+                  bind:value={typicalBlockMinutes}
+                />
+
+                <Select
+                  id="studentsHaveDevices"
+                  name="studentsHaveDevices"
+                  label="Students Have Devices"
+                  bind:value={studentsHaveDevices}
+                >
+                  <option value="">Not set</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </Select>
+
+                <Input
+                  id="state"
+                  name="state"
+                  label="State"
+                  maxlength={2}
+                  description="2-letter abbreviation (e.g. CA, NY)"
+                  bind:value={teachingState}
+                />
+
+                <Textarea
+                  id="teachingPriorities"
+                  name="teachingPriorities"
+                  label="Teaching Priorities"
+                  description="Core priorities or values (e.g. student independence, equity)"
+                  bind:value={teachingPriorities}
+                />
+
+                <Textarea
+                  id="knownConstraints"
+                  name="knownConstraints"
+                  label="Known Constraints"
+                  description="Hard constraints (e.g. no para support, 30+ students)"
+                  bind:value={knownConstraints}
+                />
+
+                <Textarea
+                  id="additionalContext"
+                  name="additionalContext"
+                  label="Additional Context"
+                  bind:value={additionalContext}
+                />
+              </div>
+            </Card>
+          </form>
+
+          <Card title="Next Steps">
+            <ol class="next-steps">
+              <li>Open a new conversation in Claude</li>
+              <li>Share a lesson plan you'd like to adapt</li>
+              <li>Review the suggestions and decide what fits your classroom</li>
+            </ol>
+          </Card>
+        </div>
+      </div>
 
       <form method="POST" action="?/signOut" class="sign-out">
         <Button type="submit" variant="ghost-danger" size="xs" label="Sign Out" />
@@ -424,7 +407,7 @@
     flex-direction: column;
   }
 
-  /* Hero — dark background for contrast */
+  /* Hero */
 
   .hero {
     background: oklch(18% 0.03 245);
@@ -590,13 +573,13 @@
   /* ── Dashboard (logged in) ───────────────────────────────── */
 
   .dashboard {
-    max-width: 540px;
+    max-width: 72rem;
     margin-inline: auto;
-    padding-inline: var(--space-4);
+    padding-inline: var(--space-6);
     padding-block: var(--space-8);
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: var(--space-6);
   }
 
   .dashboard-header {
@@ -616,7 +599,27 @@
     color: var(--text-muted);
   }
 
-  .needs-list {
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .dashboard-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  /* Learning Needs form */
+
+  .needs-edit-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
@@ -636,23 +639,13 @@
     letter-spacing: 0.05em;
   }
 
-  .needs-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1-5);
-  }
-
-  .needs-edit-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
   .needs-checkboxes {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
   }
+
+  /* Teaching Context form */
 
   .context-form {
     display: flex;
@@ -660,46 +653,23 @@
     gap: var(--space-4);
   }
 
-  .context-list {
+  /* Next Steps */
+
+  .next-steps {
+    padding-left: var(--space-4);
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .context-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-0-5);
-  }
-
-  .context-label {
-    font-size: var(--text-xs);
-    font-weight: var(--font-semibold);
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .context-value {
-    font-size: var(--text-sm);
-    color: var(--text);
-  }
-
-  .form-footer {
-    display: flex;
     gap: var(--space-2);
-    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
   }
+
+  /* Shared */
 
   .form-error {
     font-size: var(--text-sm);
     color: var(--text-error, oklch(55% 0.2 25));
     margin-bottom: var(--space-3);
-  }
-
-  .empty-text {
-    font-size: var(--text-sm);
-    color: var(--text-subtle);
   }
 
   .onboarding-text {
