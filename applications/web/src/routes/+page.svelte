@@ -8,7 +8,7 @@
   import { Input } from '@lesson-adapter/components/input';
   import { Select } from '@lesson-adapter/components/select';
   import { Textarea } from '@lesson-adapter/components/textarea';
-  import { TAXONOMY } from '@lesson-adapter/mcp';
+  import { TAXONOMY } from '@lesson-adapter/mcp/taxonomy';
   import type { TeachingContext } from '@lesson-adapter/database/schema';
 
   const categoryLabels: Record<string, string> = {

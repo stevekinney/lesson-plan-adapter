@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./taxonomy": "./src/lib/taxonomy.ts",
     "./logger": "./src/logger.ts",
     "./env": "./src/env.ts"
   },
